@@ -31,8 +31,8 @@ for fname in images:
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
     # define range of purple color in HSV
-    purpleMin = (115,50,10)
-    purpleMax = (160, 255, 255)
+    purpleMin = (0,0,0)
+    purpleMax = (0, 0, 0)
 
     # Sets pixels to white if in purple range, else will be set to black
     mask = cv2.inRange(hsv, purpleMin, purpleMax)
