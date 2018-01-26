@@ -37,12 +37,13 @@ def calc_rectangles(contours, areas):
 
 def draw_rectangles(rectangles, img_url):
     im_raw = cv2.imread(img_url)
+    b = 5
     for row in rectangles:
         for (x,y,w,h) in row:
             print(x,y,w,h)
-            crop_img = im_raw[y:y+h, x:x+w]
-            cv2.rectangle(im_raw, (x,y), (x+w,y+h),(0,255,0),2)
-            cv2.imshow("cropped", im_raw)
+            crop_img = im_raw[y:y+h+b, x:x+w]
+            # cv2.rectangle(im_raw, (x,y), (x+w,y+h),(0,255,0),2)
+            cv2.imshow("cropped", crop_img)
             cv2.waitKey(0)
 
 
