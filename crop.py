@@ -51,6 +51,16 @@ def read_img(url):
     threshold(im)
     return cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
 
+def adjust_rectangle_row(row, index, element):
+    new_row = []
+    for rect in row:
+        lst = list(rect)
+        lst[index] = element
+        t = tuple(lst)
+        new_row.append(t)
+    return new_row
+
+
 def adjust_rectangles(rectangles):
     first = rectangles[0]
     # min_y = first[1]
@@ -62,14 +72,18 @@ def adjust_rectangles(rectangles):
         # print(y)
         if y > 50 + first_y:
             # print("new row!")
-            adjusted_rectangles.append(row)
+            max_height = max(row, key=lambda x:x[3])[3]
+            adjusted_rectangles_row = adjust_rectangle_row(row, 3, max_height)
+            adjusted_rectangles.append(adjusted_rectangles_row)
             row = []
             first_y = y
 
         rect = (rect[0], first_y, rect[2], rect[3])
         row.append(rect)
 
-    adjusted_rectangles.append(row)
+    max_height = max(row, key=lambda x:x[3])[3]
+    adjusted_rectangles_row = adjust_rectangle_row(row, 3, max_height)
+    adjusted_rectangles.append(adjusted_rectangles_row)
 
 
     return adjusted_rectangles
