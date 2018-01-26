@@ -32,20 +32,18 @@ def calc_rectangles(contours, areas):
             if counter:
                 rectangles.append(cv2.boundingRect(cnt))
 
-
     return rectangles
 
 
 def draw_rectangles(rectangles, img_url):
     im_raw = cv2.imread(img_url)
-    for (x,y,w,h) in rectangles:
-        print(x,y,w,h)
-        crop_img = im_raw[y:y+h, x:x+w]
-        cv2.rectangle(im_raw, (x,y), (x+w,y+h),(0,255,0),2)
-        cv2.imshow("cropped", im_raw)
-        cv2.waitKey(0)
-    print(len(rectangles))
-    y = list(set(rectangles))
+    for row in rectangles:
+        for (x,y,w,h) in row:
+            print(x,y,w,h)
+            crop_img = im_raw[y:y+h, x:x+w]
+            cv2.rectangle(im_raw, (x,y), (x+w,y+h),(0,255,0),2)
+            cv2.imshow("cropped", im_raw)
+            cv2.waitKey(0)
 
 
 def read_img(url):
@@ -57,18 +55,23 @@ def adjust_rectangles(rectangles):
     first = rectangles[0]
     # min_y = first[1]
     adjusted_rectangles = []
+    row = []
     first_y = first[1]
     for rect in rectangles:
         y = rect[1]
         # print(y)
         if y > 50 + first_y:
             # print("new row!")
+            adjusted_rectangles.append(row)
+            row = []
             first_y = y
-        else:
-            # print("add rect")
-            rect = (rect[0], first_y, rect[2], rect[3])
 
-        adjusted_rectangles.append(rect)
+        rect = (rect[0], first_y, rect[2], rect[3])
+        row.append(rect)
+
+    adjusted_rectangles.append(row)
+
+
     return adjusted_rectangles
 
 def sort_rectangles(rectangles):
@@ -82,5 +85,9 @@ mean_area = np.mean(areas)
 rectangles = calc_rectangles(contours, areas)
 rectangles = sort_rectangles(rectangles)
 adjusted_rectangles = adjust_rectangles(rectangles)
-sorted_rectangles = sort_rectangles(adjusted_rectangles)
+
+sorted_rectangles = []
+for row in adjusted_rectangles:
+    sorted_rectangles.append(sort_rectangles(row))
+
 draw_rectangles(sorted_rectangles, 'images/beserker_cropped.png')
