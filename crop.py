@@ -35,16 +35,25 @@ def calc_rectangles(contours, areas):
     return rectangles
 
 
-def draw_rectangles(rectangles, img_url):
+def draw_rectangles(rectangles, img_url, preview=False):
     im_raw = cv2.imread(img_url)
-    b = 5
+    cropped_imgs = []
+    b = 3
     for row in rectangles:
+
+        new_row = []
         for (x,y,w,h) in row:
             print(x,y,w,h)
             crop_img = im_raw[y:y+h+b, x:x+w]
-            # cv2.rectangle(im_raw, (x,y), (x+w,y+h),(0,255,0),2)
-            cv2.imshow("cropped", crop_img)
-            cv2.waitKey(0)
+            new_row.append(crop_img)
+            if preview:
+                cv2.rectangle(im_raw, (x,y), (x+w,y+h),(0,255,0),2)
+                cv2.imshow("cropped", crop_img)
+                cv2.waitKey(0)
+        cropped_imgs.append(new_row)
+
+    return cropped_imgs
+
 
 
 def read_img(url):
@@ -92,6 +101,17 @@ def adjust_rectangles(rectangles):
 def sort_rectangles(rectangles):
     return sorted(rectangles, key=lambda k: [k[1], k[0]])
 
+def save_videos(cropped_imgs, video_name):
+    for row in cropped_imgs:
+        # bg_height = max(row, key=lambda x:x[3])[3]
+        # bg_width = max(row, key=lambda x:x[2])[2]
+        # bg_img = np.zeros((bg_height,bg_width,3), np.uint8)
+        for img in row:
+            print(img)
+            # img_w = img
+            # offset = ((bg_w - img_w) / 2, (bg_h - img_h) / 2)
+        # cv2.VideoWriter("video_name_{}".format(i), -1, 1, (width,height))
+
 imgray = read_img('images/beserker_cropped.png')
 contours = calc_contours(imgray)
 areas = calc_areas(contours)
@@ -105,4 +125,5 @@ sorted_rectangles = []
 for row in adjusted_rectangles:
     sorted_rectangles.append(sort_rectangles(row))
 
-draw_rectangles(sorted_rectangles, 'images/beserker_cropped.png')
+cropped_imgs = draw_rectangles(sorted_rectangles, 'images/beserker_cropped.png')
+save_videos(cropped_imgs, 'beserker')
