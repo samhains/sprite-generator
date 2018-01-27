@@ -2,6 +2,15 @@ import numpy as np
 import cv2
 
 MIN_CONTOUR_THRESHOLD = 100
+BG_BUFFER_WIDTH = 20
+
+def alpha_threshold(image):
+    r = image[:, :, 0]
+    g = image[:, :, 1]
+    b = image[:, :, 2]
+
+    mask = ((r == 128) & (g == 128) & (b == 0))
+    image[mask] = 0
 
 
 def threshold(image):
@@ -34,16 +43,26 @@ def calc_rectangles(contours, areas):
 
     return rectangles
 
+def add_alpha_channel(img):
+    b_channel, g_channel, r_channel = cv2.split(img)
+    alpha_channel = np.ones(b_channel.shape, dtype=b_channel.dtype) * 50 #creating a dummy alpha channel image.
+    return cv2.merge((b_channel, g_channel, r_channel, alpha_channel))
 
 def draw_rectangles(rectangles, img_url, preview=False):
-    im_raw = cv2.imread(img_url)
+    im_raw = cv2.imread(img_url, -1)
+    im_raw = add_alpha_channel(im_raw)
+    alpha_threshold(im_raw)
+    print('rawimg', im_raw.shape)
     cropped_imgs = []
-    b = 3
+    b = 2
     for row in rectangles:
-
         new_row = []
         for (x,y,w,h) in row:
             print(x,y,w,h)
+            if w % 2 != 0:
+                w = w + 1
+            if h % 2 != 0:
+                h = h + 1
             crop_img = im_raw[y:y+h+b, x:x+w]
             new_row.append(crop_img)
             if preview:
@@ -103,11 +122,34 @@ def sort_rectangles(rectangles):
 
 def save_videos(cropped_imgs, video_name):
     for row in cropped_imgs:
-        # bg_height = max(row, key=lambda x:x[3])[3]
-        # bg_width = max(row, key=lambda x:x[2])[2]
-        # bg_img = np.zeros((bg_height,bg_width,3), np.uint8)
+        bg_w = max(row, key=lambda x: x.shape[0]).shape[0]+BG_BUFFER_WIDTH
+        # enforce evenness
+        if bg_w % 2 != 0:
+            bg_w = bg_w + 1
+        bg_h = max(row, key=lambda x: x.shape[1]).shape[1]+BG_BUFFER_WIDTH
+        if bg_h % 2 != 0:
+            bg_h = bg_h + 1
+
         for img in row:
-            print(img)
+
+            bg_img = np.zeros((bg_w, bg_h, 4), np.uint8)
+            img_w, img_h, _ = img.shape
+            x_offset, y_offset = ((bg_w - img_w) / 2, (bg_h - img_h) / 2)
+            print('x_offset', x_offset)
+            print('y_offset', y_offset)
+            print('img', img.shape[0], img.shape[1])
+            print('bg_img', bg_img.shape[0], bg_img.shape[1])
+            bg_img[x_offset:x_offset + img.shape[0], y_offset:y_offset + img.shape[1]] = img
+            cv2.imshow("cropped", bg_img)
+            cv2.waitKey(0)
+
+        # bg_height = max(row, key=lambda x:x[3])
+        # bg_width = max(row, key=lambda x:x[2])
+        # print(bg_height)
+        # print(bg_width)
+        # # bg_img = np.zeros((bg_height,bg_width,3), np.uint8)
+        # for img in row:
+        #     print(img)
             # img_w = img
             # offset = ((bg_w - img_w) / 2, (bg_h - img_h) / 2)
         # cv2.VideoWriter("video_name_{}".format(i), -1, 1, (width,height))
