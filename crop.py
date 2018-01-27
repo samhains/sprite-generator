@@ -1,4 +1,5 @@
 import numpy as np
+import os
 import cv2
 
 MIN_CONTOUR_THRESHOLD = 100
@@ -45,7 +46,7 @@ def calc_rectangles(contours, areas):
 
 def add_alpha_channel(img):
     b_channel, g_channel, r_channel = cv2.split(img)
-    alpha_channel = np.ones(b_channel.shape, dtype=b_channel.dtype) * 50 #creating a dummy alpha channel image.
+    alpha_channel = np.ones(b_channel.shape, dtype=b_channel.dtype) * 255 #creating a dummy alpha channel image.
     return cv2.merge((b_channel, g_channel, r_channel, alpha_channel))
 
 def draw_rectangles(rectangles, img_url, preview=False):
@@ -121,7 +122,11 @@ def sort_rectangles(rectangles):
     return sorted(rectangles, key=lambda k: [k[1], k[0]])
 
 def save_videos(cropped_imgs, video_name):
-    for row in cropped_imgs:
+    for row_number, row in enumerate(cropped_imgs):
+        dir_name = "output/{}_{}".format(video_name, row_number)
+
+        if not os.path.exists(dir_name):
+            os.makedirs(dir_name)
         bg_w = max(row, key=lambda x: x.shape[0]).shape[0]+BG_BUFFER_WIDTH
         # enforce evenness
         if bg_w % 2 != 0:
@@ -129,6 +134,8 @@ def save_videos(cropped_imgs, video_name):
         bg_h = max(row, key=lambda x: x.shape[1]).shape[1]+BG_BUFFER_WIDTH
         if bg_h % 2 != 0:
             bg_h = bg_h + 1
+
+        row_num = 1
 
         for img in row:
 
@@ -139,9 +146,12 @@ def save_videos(cropped_imgs, video_name):
             print('y_offset', y_offset)
             print('img', img.shape[0], img.shape[1])
             print('bg_img', bg_img.shape[0], bg_img.shape[1])
-            bg_img[x_offset:x_offset + img.shape[0], y_offset:y_offset + img.shape[1]] = img
-            cv2.imshow("cropped", bg_img)
-            cv2.waitKey(0)
+            bg_img[x_offset:x_offset + img.shape[0], y_offset:y_offset + img.shape[1], :] = img
+            # cv2.imshow("cropped", bg_img)
+            row_num_str = "{0:0>3}".format(row_num)
+            cv2.imwrite("{}/{}.png".format(dir_name, row_num_str), bg_img)
+            row_num = row_num + 1
+            # cv2.waitKey(0)
 
         # bg_height = max(row, key=lambda x:x[3])
         # bg_width = max(row, key=lambda x:x[2])
