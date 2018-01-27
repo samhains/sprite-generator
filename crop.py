@@ -5,20 +5,20 @@ import cv2
 MIN_CONTOUR_THRESHOLD = 100
 BG_BUFFER_WIDTH = 20
 
-def alpha_threshold(image):
+def alpha_threshold(image, bg_color):
     r = image[:, :, 0]
     g = image[:, :, 1]
     b = image[:, :, 2]
 
-    mask = ((r == 128) & (g == 128) & (b == 0))
+    mask = ((r == bg_color[0]) & (g == bg_color[1]) & (b == bg_color[2]))
     image[mask] = 0
 
 
-def threshold(image):
+def threshold(image, bg_color):
     r = image[:, :, 0]
     g = image[:, :, 1]
     b = image[:, :, 2]
-    mask = ((r == 128) & (g == 128) & (b == 0))
+    mask = ((r == bg_color[0]) & (g == bg_color[1]) & (b == bg_color[2]))
     image[np.logical_not(mask)] = 255
     image[mask] = 0
 
@@ -36,6 +36,8 @@ def calc_areas(contours):
 def calc_rectangles(contours, areas):
     rectangles = []
     counter = 0
+
+    mean_area = np.mean(areas)
     for i, cnt in enumerate(contours):
         if areas[i] > mean_area*0.8 and areas[i] < mean_area*1.8:
             counter = counter + 1
@@ -52,7 +54,7 @@ def add_alpha_channel(img):
 def draw_rectangles(rectangles, img_url, preview=False):
     im_raw = cv2.imread(img_url, -1)
     im_raw = add_alpha_channel(im_raw)
-    alpha_threshold(im_raw)
+    alpha_threshold(im_raw, im_raw[0, 0])
     print('rawimg', im_raw.shape)
     cropped_imgs = []
     b = 2
@@ -78,7 +80,7 @@ def draw_rectangles(rectangles, img_url, preview=False):
 
 def read_img(url):
     im = cv2.imread(url)
-    threshold(im)
+    threshold(im, im[0,0])
     return cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
 
 def adjust_rectangle_row(row, index, element):
@@ -147,11 +149,11 @@ def save_videos(cropped_imgs, video_name):
             print('img', img.shape[0], img.shape[1])
             print('bg_img', bg_img.shape[0], bg_img.shape[1])
             bg_img[x_offset:x_offset + img.shape[0], y_offset:y_offset + img.shape[1], :] = img
-            # cv2.imshow("cropped", bg_img)
+            cv2.imshow("cropped", bg_img)
             row_num_str = "{0:0>3}".format(row_num)
             cv2.imwrite("{}/{}.png".format(dir_name, row_num_str), bg_img)
             row_num = row_num + 1
-            # cv2.waitKey(0)
+            cv2.waitKey(0)
 
         # bg_height = max(row, key=lambda x:x[3])
         # bg_width = max(row, key=lambda x:x[2])
@@ -164,18 +166,20 @@ def save_videos(cropped_imgs, video_name):
             # offset = ((bg_w - img_w) / 2, (bg_h - img_h) / 2)
         # cv2.VideoWriter("video_name_{}".format(i), -1, 1, (width,height))
 
-imgray = read_img('images/beserker_cropped.png')
-contours = calc_contours(imgray)
-areas = calc_areas(contours)
+def extract_animation(fname):
+    imgray = read_img('images/{}.gif'.format(fname))
+    contours = calc_contours(imgray)
+    areas = calc_areas(contours)
 
-mean_area = np.mean(areas)
-rectangles = calc_rectangles(contours, areas)
-rectangles = sort_rectangles(rectangles)
-adjusted_rectangles = adjust_rectangles(rectangles)
+    rectangles = calc_rectangles(contours, areas)
+    rectangles = sort_rectangles(rectangles)
+    adjusted_rectangles = adjust_rectangles(rectangles)
 
-sorted_rectangles = []
-for row in adjusted_rectangles:
-    sorted_rectangles.append(sort_rectangles(row))
+    sorted_rectangles = []
+    for row in adjusted_rectangles:
+        sorted_rectangles.append(sort_rectangles(row))
 
-cropped_imgs = draw_rectangles(sorted_rectangles, 'images/beserker_cropped.png')
-save_videos(cropped_imgs, 'beserker')
+    cropped_imgs = draw_rectangles(sorted_rectangles, 'images/{}.gif'.format(fname))
+    save_videos(cropped_imgs, fname )
+
+extract_animation('kirby')
