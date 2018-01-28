@@ -47,7 +47,12 @@ def calc_rectangles(contours, areas):
     return rectangles
 
 def add_alpha_channel(img):
-    b_channel, g_channel, r_channel = cv2.split(img)
+    print(img.shape)
+    if(img.shape[2] == 4):
+        b_channel, g_channel, r_channel, _ = cv2.split(img)
+    else:
+        b_channel, g_channel, r_channel = cv2.split(img)
+
     alpha_channel = np.ones(b_channel.shape, dtype=b_channel.dtype) * 255 #creating a dummy alpha channel image.
     return cv2.merge((b_channel, g_channel, r_channel, alpha_channel))
 
@@ -79,6 +84,7 @@ def draw_rectangles(rectangles, img_url, preview=False):
 
 
 def read_img(url):
+    print(url)
     im = cv2.imread(url)
     threshold(im, im[0,0])
     return cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
@@ -149,11 +155,9 @@ def save_videos(cropped_imgs, video_name):
             print('img', img.shape[0], img.shape[1])
             print('bg_img', bg_img.shape[0], bg_img.shape[1])
             bg_img[x_offset:x_offset + img.shape[0], y_offset:y_offset + img.shape[1], :] = img
-            cv2.imshow("cropped", bg_img)
             row_num_str = "{0:0>3}".format(row_num)
             cv2.imwrite("{}/{}.png".format(dir_name, row_num_str), bg_img)
             row_num = row_num + 1
-            cv2.waitKey(0)
 
         # bg_height = max(row, key=lambda x:x[3])
         # bg_width = max(row, key=lambda x:x[2])
@@ -167,7 +171,7 @@ def save_videos(cropped_imgs, video_name):
         # cv2.VideoWriter("video_name_{}".format(i), -1, 1, (width,height))
 
 def extract_animation(fname):
-    imgray = read_img('images/{}.gif'.format(fname))
+    imgray = read_img('images/{}.png'.format(fname))
     contours = calc_contours(imgray)
     areas = calc_areas(contours)
 
@@ -179,7 +183,10 @@ def extract_animation(fname):
     for row in adjusted_rectangles:
         sorted_rectangles.append(sort_rectangles(row))
 
-    cropped_imgs = draw_rectangles(sorted_rectangles, 'images/{}.gif'.format(fname))
+    cropped_imgs = draw_rectangles(sorted_rectangles, 'images/{}.png'.format(fname))
     save_videos(cropped_imgs, fname )
 
-extract_animation('kirby')
+# extract_animation('kirby')
+dir_fnames = [fname.split(".png")[0] for fname in os.listdir("images") if fname.endswith(".png")]
+for fname in dir_fnames:
+    extract_animation(fname)
