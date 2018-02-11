@@ -4,6 +4,7 @@ import cv2
 
 MIN_CONTOUR_THRESHOLD = 100
 BG_BUFFER_WIDTH = 20
+BASE_DIR = "./images/sprites"
 
 def alpha_threshold(image, bg_color):
     r = image[:, :, 0]
@@ -100,28 +101,31 @@ def adjust_rectangle_row(row, index, element):
 
 
 def adjust_rectangles(rectangles):
-    first = rectangles[0]
-    # min_y = first[1]
-    adjusted_rectangles = []
-    row = []
-    first_y = first[1]
-    for rect in rectangles:
-        y = rect[1]
-        # print(y)
-        if y > 50 + first_y:
-            # print("new row!")
-            max_height = max(row, key=lambda x:x[3])[3]
-            adjusted_rectangles_row = adjust_rectangle_row(row, 3, max_height)
-            adjusted_rectangles.append(adjusted_rectangles_row)
-            row = []
-            first_y = y
+    try:
+        first = rectangles[0]
+        # min_y = first[1]
+        adjusted_rectangles = []
+        row = []
+        first_y = first[1]
+        for rect in rectangles:
+            y = rect[1]
+            # print(y)
+            if y > 50 + first_y:
+                # print("new row!")
+                max_height = max(row, key=lambda x:x[3])[3]
+                adjusted_rectangles_row = adjust_rectangle_row(row, 3, max_height)
+                adjusted_rectangles.append(adjusted_rectangles_row)
+                row = []
+                first_y = y
 
-        rect = (rect[0], first_y, rect[2], rect[3])
-        row.append(rect)
+            rect = (rect[0], first_y, rect[2], rect[3])
+            row.append(rect)
 
-    max_height = max(row, key=lambda x:x[3])[3]
-    adjusted_rectangles_row = adjust_rectangle_row(row, 3, max_height)
-    adjusted_rectangles.append(adjusted_rectangles_row)
+        max_height = max(row, key=lambda x:x[3])[3]
+        adjusted_rectangles_row = adjust_rectangle_row(row, 3, max_height)
+        adjusted_rectangles.append(adjusted_rectangles_row)
+    except:
+        adjusted_rectangles = []
 
 
     return adjusted_rectangles
@@ -171,7 +175,7 @@ def save_videos(cropped_imgs, video_name):
         # cv2.VideoWriter("video_name_{}".format(i), -1, 1, (width,height))
 
 def extract_animation(fname):
-    imgray = read_img('images/{}.png'.format(fname))
+    imgray = read_img('{}/{}.png'.format(BASE_DIR, fname))
     contours = calc_contours(imgray)
     areas = calc_areas(contours)
 
@@ -183,10 +187,10 @@ def extract_animation(fname):
     for row in adjusted_rectangles:
         sorted_rectangles.append(sort_rectangles(row))
 
-    cropped_imgs = draw_rectangles(sorted_rectangles, 'images/{}.png'.format(fname))
+    cropped_imgs = draw_rectangles(sorted_rectangles, '{}/{}.png'.format(BASE_DIR, fname))
     save_videos(cropped_imgs, fname )
 
 # extract_animation('kirby')
-dir_fnames = [fname.split(".png")[0] for fname in os.listdir("images") if fname.endswith(".png")]
+dir_fnames = [fname.split(".png")[0] for fname in os.listdir("{}".format(BASE_DIR)) if fname.endswith(".png")]
 for fname in dir_fnames:
     extract_animation(fname)
